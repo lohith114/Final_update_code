@@ -48,9 +48,15 @@ const Addexamreport = () => {
     ]);
   };
 
+  const handleDeleteField = (index) => {
+    const values = [...examData];
+    values.splice(index, 1);
+    setExamData(values);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    setIsSubmitting(true); // progress bar on submit
+    setIsSubmitting(true); // Show progress bar on submit
     axios
       .post('http://localhost:5000/addexamreport', { rollNumber, examData })
       .then((response) => {
@@ -94,12 +100,12 @@ const Addexamreport = () => {
           position: 'absolute',
           top: 20,
           right: 20,
-          zIndex: 10, // Ensure the button is above other content
-          fontSize: '12px', // Decreased button font size
-          padding: '8px 16px', // Adjusted padding
-          backgroundColor: '#006064', // Changed button color
+          zIndex: 10,
+          fontSize: '12px',
+          padding: '8px 16px',
+          backgroundColor: '#006064',
           '&:hover': {
-            backgroundColor: '#004d40', // Darker color on hover
+            backgroundColor: '#004d40',
           },
         }}
       >
@@ -111,7 +117,7 @@ const Addexamreport = () => {
         variant="h4"
         component="h1"
         gutterBottom
-        sx={{ color: '#7D0541' }} // Changed text color
+        sx={{ color: '#7D0541' }}
       >
         Add Exam Report
       </Typography>
@@ -123,7 +129,7 @@ const Addexamreport = () => {
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2} alignItems="center">
           {/* Roll Number */}
-          <Grid item xs={12} md={2}>
+          <Grid item xs={12} md={4}>
             <TextField
               label="Roll Number"
               variant="outlined"
@@ -133,11 +139,13 @@ const Addexamreport = () => {
               required
             />
           </Grid>
+        </Grid>
 
-          {/* Exam Data Fields */}
+        {/* Dynamic Exam Data Fields */}
+        <Grid container spacing={2} alignItems="center" sx={{ marginTop: 2 }}>
           {examData.map((data, index) => (
-            <React.Fragment key={index}>
-              <Grid item xs={12} md={2}>
+            <Grid container item spacing={2} key={index}>
+              <Grid item xs={12} md={3}>
                 <TextField
                   label="Subject"
                   variant="outlined"
@@ -148,7 +156,7 @@ const Addexamreport = () => {
                   fullWidth
                 />
               </Grid>
-              <Grid item xs={12} md={2}>
+              <Grid item xs={12} md={3}>
                 <TextField
                   label="Marks"
                   variant="outlined"
@@ -160,7 +168,7 @@ const Addexamreport = () => {
                   fullWidth
                 />
               </Grid>
-              <Grid item xs={12} md={2}>
+              <Grid item xs={12} md={3}>
                 <TextField
                   label="Grade"
                   variant="outlined"
@@ -171,7 +179,7 @@ const Addexamreport = () => {
                   fullWidth
                 />
               </Grid>
-              <Grid item xs={12} md={2}>
+              <Grid item xs={12} md={3}>
                 <TextField
                   label="Type of Exam"
                   variant="outlined"
@@ -182,39 +190,58 @@ const Addexamreport = () => {
                   fullWidth
                 />
               </Grid>
-            </React.Fragment>
+              <Grid item xs={12} md={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => handleDeleteField(index)}
+                  sx={{
+                    fontSize: '12px',
+                    padding: '8px 16px',
+                  }}
+                >
+                  Delete
+                </Button>
+              </Grid>
+            </Grid>
           ))}
         </Grid>
 
-        {/* Button to add more subjects */}
+        {/* Add More Fields Button */}
         <Button
           type="button"
           variant="outlined"
           onClick={addExamDataField}
-          sx={{ marginTop: 2, fontSize: '12px', padding: '8px 16px', borderColor: '#006064', color: '#006064', '&:hover': { backgroundColor: '#e0f7fa', borderColor: '#004d40' }}} // Adjusted button size and color
+          sx={{
+            marginTop: 2,
+            fontSize: '12px',
+            padding: '8px 16px',
+            borderColor: '#006064',
+            color: '#006064',
+            '&:hover': { backgroundColor: '#e0f7fa', borderColor: '#004d40' },
+          }}
         >
           Add More Subjects
         </Button>
 
         {/* Submit Button */}
         <Button
-  type="submit"
-  variant="contained"
-  sx={{
-    marginTop: 2, 
-    fontSize: '14px', // You can adjust the font size if needed
-    padding: '10px 20px', 
-    backgroundColor: '#388e3c', 
-    '&:hover': { backgroundColor: '#1b5e20' },
-    width: 'auto', // Auto width based on content size
-    display: 'block', // Ensure it behaves like a block element to respect centering
-    marginLeft: 'auto', // Push to the right
-    marginRight: 'auto', // Push to the left (centering)
-  }}
->
-  Submit
-</Button>
-
+          type="submit"
+          variant="contained"
+          sx={{
+            marginTop: 2,
+            fontSize: '14px',
+            padding: '10px 20px',
+            backgroundColor: '#388e3c',
+            '&:hover': { backgroundColor: '#1b5e20' },
+            width: 'auto',
+            display: 'block',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}
+        >
+          Submit
+        </Button>
       </form>
 
       {/* Snackbar for success message */}
