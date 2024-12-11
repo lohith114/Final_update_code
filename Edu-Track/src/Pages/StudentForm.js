@@ -1,18 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import {
-  Box,
-  Button,
-  Grid,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
-  FormControl,
-  InputLabel,
-  CircularProgress,
-  Tooltip,
-} from "@mui/material";
+import { TextField, Select, MenuItem, Button, FormControl, InputLabel, FormHelperText, CircularProgress, Grid } from "@mui/material";
 
 const StudentForm = () => {
   const [formData, setFormData] = useState({
@@ -23,10 +11,9 @@ const StudentForm = () => {
     Section: "",
   });
 
-  const [loading, setLoading] = useState(false); // For submit button loading state
-  const [errors, setErrors] = useState({}); // For inline validation errors
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  // Validation function
   const validateForm = () => {
     const newErrors = {};
     if (!formData.Class) newErrors.Class = "Class is required";
@@ -34,38 +21,34 @@ const StudentForm = () => {
     if (!formData.NameOfTheStudent.trim()) newErrors.NameOfTheStudent = "Student Name is required";
     if (!formData.ParentEmail.trim()) newErrors.ParentEmail = "Parent's Gmail ID is required";
     if (!formData.Section.trim()) newErrors.Section = "Section is required";
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // API request to save data
   const saveToGoogleSheet = async (data) => {
     setLoading(true);
     try {
-      // Make a POST request to the backend to save student data
       const response = await axios.post("http://localhost:5000/save", data, {
         headers: {
           "Content-Type": "application/json",
-          // Ensure token/authorization headers are set if required
           Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
       });
-      
+
       if (response.status === 200) {
-        alert(response.data.message); // Success message from backend
+        alert(response.data.message);
       } else {
-        alert("Failed to save data. Please try again."); // Handling any errors
+        alert("Failed to save data. Please try again.");
       }
 
-      // Reset form after submission
-      setFormData((prevData) => ({
-        ...prevData,
+      setFormData({
+        Class: "",
         RollNumber: "",
         NameOfTheStudent: "",
         ParentEmail: "",
         Section: "",
-      }));
+      });
     } catch (error) {
       console.error("Error saving data:", error);
       alert("Error saving data! Please try again.");
@@ -74,7 +57,6 @@ const StudentForm = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
@@ -82,160 +64,100 @@ const StudentForm = () => {
     }
   };
 
-  // Handle form field change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
-    setErrors((prevErrors) => ({ ...prevErrors, [name]: "" })); // Clear error on change
+    setErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
   };
 
   return (
-    <Box
-      sx={{
-        maxWidth: 700,
-        margin: "3rem auto",
-        padding: 4,
-        border: "1px solid #e0e0e0",
-        borderRadius: 3,
-        boxShadow: "0px 6px 12px rgba(0, 0, 0, 0.1)",
-        backgroundColor: "#ffffff",
-      }}
-    >
-      <Typography
-        variant="h4"
-        align="center"
-        gutterBottom
-        fontWeight="bold"
-        color="primary"
-      >
-        Student Attendance Registration
-      </Typography>
-      <Typography variant="body1" align="center" color="textSecondary" gutterBottom>
-        Fill in the form below to register student details for attendance tracking.
-      </Typography>
+    <div style={{ maxWidth: '600px', margin: '-4rem auto 0', padding: '1.5rem', border: '1px solid #e0e0e0', borderRadius: '10px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', backgroundColor: '#fff' }}>
+      <h2 style={{ textAlign: 'center', color: '#2c3e50', marginBottom: '1rem' }}>Student Attendance Registration</h2>
+      <p style={{ textAlign: 'center', color: '#7f8c8d', marginBottom: '2rem' }}>Fill in the form below to register student details for attendance tracking.</p>
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
-          {/* Class Selector */}
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth error={Boolean(errors.Class)}>
+            <FormControl fullWidth error={!!errors.Class}>
               <InputLabel>Select Class</InputLabel>
-              <Select
-                name="Class"
-                value={formData.Class}
-                onChange={handleChange}
-                label="Select Class"
-              >
-                <MenuItem value="" disabled>
-                  Select class
-                </MenuItem>
+              <Select name="Class" value={formData.Class} onChange={handleChange}>
+                <MenuItem value="" disabled>Select class</MenuItem>
                 {Array.from({ length: 10 }, (_, i) => (
-                  <MenuItem key={i + 1} value={`Class${i + 1}`}>
-                    Class{i + 1}
-                  </MenuItem>
+                  <MenuItem key={i + 1} value={`Class${i + 1}`}>Class {i + 1}</MenuItem>
                 ))}
               </Select>
-              {errors.Class && (
-                <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-                  {errors.Class}
-                </Typography>
-              )}
+              {errors.Class && <FormHelperText>{errors.Class}</FormHelperText>}
             </FormControl>
           </Grid>
 
-          {/* Roll Number */}
           <Grid item xs={12} sm={6}>
-            <Tooltip title="Enter Roll Number" arrow>
-              <TextField
-                fullWidth
-                label="Roll Number"
-                name="RollNumber"
-                value={formData.RollNumber}
-                onChange={handleChange}
-                placeholder="Enter roll number"
-                variant="outlined"
-                error={Boolean(errors.RollNumber)}
-                helperText={errors.RollNumber || " "}
-              />
-            </Tooltip>
+            <TextField
+              name="RollNumber"
+              label="Roll Number"
+              value={formData.RollNumber}
+              onChange={handleChange}
+              fullWidth
+              error={!!errors.RollNumber}
+              helperText={errors.RollNumber}
+            />
           </Grid>
 
-          {/* Name of the Student */}
           <Grid item xs={12} sm={6}>
-            <Tooltip title="Enter the student's full name" arrow>
-              <TextField
-                fullWidth
-                label="Name of the Student"
-                name="NameOfTheStudent"
-                value={formData.NameOfTheStudent}
-                onChange={handleChange}
-                placeholder="Enter student's name"
-                variant="outlined"
-                error={Boolean(errors.NameOfTheStudent)}
-                helperText={errors.NameOfTheStudent || " "}
-              />
-            </Tooltip>
+            <TextField
+              name="NameOfTheStudent"
+              label="Name of the Student"
+              value={formData.NameOfTheStudent}
+              onChange={handleChange}
+              fullWidth
+              error={!!errors.NameOfTheStudent}
+              helperText={errors.NameOfTheStudent}
+            />
           </Grid>
 
-          {/* Parent's Gmail ID */}
           <Grid item xs={12} sm={6}>
-            <Tooltip title="Enter the parent's Gmail ID" arrow>
-              <TextField
-                fullWidth
-                label="Parent's Gmail ID"
-                name="ParentEmail"
-                value={formData.ParentEmail}
-                onChange={handleChange}
-                placeholder="Enter parent's Gmail ID"
-                variant="outlined"
-                error={Boolean(errors.ParentEmail)}
-                helperText={errors.ParentEmail || " "}
-              />
-            </Tooltip>
+            <TextField
+              name="ParentEmail"
+              label="Parent's Gmail ID"
+              type="email"
+              value={formData.ParentEmail}
+              onChange={handleChange}
+              fullWidth
+              error={!!errors.ParentEmail}
+              helperText={errors.ParentEmail}
+            />
           </Grid>
-
-          {/* Section */}
           <Grid item xs={12}>
-            <Tooltip title="Enter the section (e.g., A, B, etc.)" arrow>
-              <TextField
-                fullWidth
-                label="Section"
-                name="Section"
-                value={formData.Section}
-                onChange={handleChange}
-                placeholder="Enter section"
-                variant="outlined"
-                error={Boolean(errors.Section)}
-                helperText={errors.Section || " "}
-              />
-            </Tooltip>
+            <TextField
+              name="Section"
+              label="Section"
+              value={formData.Section}
+              onChange={handleChange}
+              fullWidth
+              error={!!errors.Section}
+              helperText={errors.Section}
+            />
           </Grid>
 
-          {/* Submit Button */}
-          <Grid item xs={12} sx={{ textAlign: "center" }}>
+          <Grid item xs={12} style={{ textAlign: 'center' }}>
             <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={loading || !formData.Class || !formData.RollNumber || !formData.NameOfTheStudent || !formData.ParentEmail || !formData.Section}
-              sx={{
-                px: 4,
-                py: 1.5,
-                borderRadius: 2,
-                fontSize: "16px",
-                fontWeight: "bold",
-                boxShadow: loading ? "none" : "0px 4px 8px rgba(0, 0, 0, 0.2)",
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  boxShadow: "0px 6px 12px rgba(0, 0, 0, 0.3)",
-                },
-              }}
+               type="submit"
+                 variant="contained"
+                    sx={{
+                       backgroundColor: "##64ffda", 
+                           color: "white", 
+                              size: "large", // Button size
+                                   '&:hover': {
+                                 backgroundColor: "#004d40", 
+                            },
+                       }}
+                 disabled={loading}
+            startIcon={loading && <CircularProgress size={20} color="inherit" />}
             >
-              {loading ? <CircularProgress size={24} color="inherit" /> : "Submit"}
-            </Button>
-          </Grid>
+             {loading ? 'Submitting...' : 'Submit'}
+           </Button>
+           </Grid>
         </Grid>
       </form>
-    </Box>
+    </div>
   );
 };
 

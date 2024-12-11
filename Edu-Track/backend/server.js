@@ -4,16 +4,32 @@ const multer = require("multer");
 const ImageKit = require("imagekit");
 const bodyParser = require("body-parser");
 const { google } = require("googleapis");
-
-const app = express();
-const PORT = 5000;
-
-app.use(cors());
-app.use(bodyParser.json());
+const { createClient } = require("@libsql/client");
 
 require('dotenv').config();
 
-// ImageKit configuration using environment variables
+const app = express();
+const port = process.env.PORT || 5000;
+
+// Configure CORS
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000", // Configurable CORS origin
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+    credentials: true, // Include credentials if necessary
+  })
+);
+
+// Middleware
+app.use(bodyParser.json());
+
+// Database client
+const db = createClient({
+  url: process.env.TURSO_DB_URL,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
+
+// ImageKit configuration
 const imagekit = new ImageKit({
   publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
   privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
@@ -27,6 +43,16 @@ const upload = multer({ storage: storage });
 // Variables to track last uploaded files for each class
 let generalTimetableFiles = {};
 let examTimetableFiles = {};
+
+// Helper function to pad numbers
+function padNumber(num) {
+  const size = 4; // Desired number length
+  let numStr = num.toString();
+  while (numStr.length < size) {
+    numStr = "0" + numStr;
+  }
+  return numStr;
+}
 
 // Helper function to upload file
 const uploadFile = (fileBuffer, fileName, folder, onSuccess, onError) => {
@@ -60,6 +86,318 @@ const deleteFile = (fileId, onSuccess, onError) => {
     }
   });
 };
+
+// Utility: Get current date in IST format
+const getISTDate = () => {
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000; // IST offset
+  const istTime = new Date(now.getTime() + istOffset);
+  const year = istTime.getUTCFullYear();
+  const month = String(istTime.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(istTime.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Middleware: Validate request body
+const validateRequestBody = (keys) => (req, res, next) => {
+  const missingKeys = keys.filter((key) => !req.body[key]);
+  if (missingKeys.length > 0) {
+    return res.status(400).json({ error: `Missing required fields: ${missingKeys.join(", ")}` });
+  }
+  next();
+};
+
+// Routes
+// Route to register a student
+app.post("/register", async (req, res) => {
+  const {
+    firstName,
+    lastName,
+    gender,
+    dob,
+    address,
+    parentName,
+    parentEmail,
+    parentContact,
+    cast,
+    region,
+    yearOfAdmission,
+  } = req.body;
+
+  try {
+    // Get the current student count
+    const result = await db.execute("SELECT COUNT(*) FROM `Student-info`");
+    const studentCount = result.rows[0]["COUNT(*)"];
+    console.log("Student count:", studentCount);
+
+    // Generate a unique roll number
+    const studentid = "S" + yearOfAdmission + padNumber(studentCount + 1);
+
+    // Check if the roll number already exists
+    const existingStudent = await db.execute({
+      sql: `SELECT rollNumber FROM "Student-info" WHERE rollNumber = ?`,
+      args: [studentid],
+    });
+    if (existingStudent.rows.length > 0) {
+      return res.status(400).send({ error: "Roll number already exists" });
+    }
+
+    await db.execute({
+      sql: `INSERT INTO "Student-info" (rollNumber, firstName, lastName, gender, dob, address, parentName, parentEmail, parentContact, cast, region, yearOfAdmission)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        studentid,
+        firstName,
+        lastName,
+        gender,
+        dob,
+        address,
+        parentName,
+        parentEmail,
+        parentContact,
+        cast,
+        region,
+        yearOfAdmission,
+      ],
+    });
+
+    res.status(201).send("Student registered successfully");
+  } catch (error) {
+    console.error("Error registering student:", error);
+    res.status(500).send({ error: "Registration failed" });
+  }
+});
+
+// Route to fetch all students
+app.get("/allstudents", async (req, res) => {
+  try {
+    // Fetch all students from the database
+    const result = await db.execute("SELECT * FROM `Student-info`");
+    console.log("Fetched students:", result.rows);
+
+    // Send the result as a response
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching students:", error);
+    res.status(500).send("Failed to retrieve students");
+  }
+});
+
+
+app.put("/updateStudent/:rollNumber", async (req, res) => {
+  const rollNumber = req.params.rollNumber;
+  const {
+    firstName,
+    lastName,
+    gender,
+    dob,
+    address,
+    parentName,
+    parentEmail,
+    parentContact,
+    cast,
+    region,
+    yearOfAdmission,
+  } = req.body;
+
+  try {
+    await db.execute({
+      sql: `UPDATE "Student-info" SET firstName = ?, lastName = ?, gender = ?, dob = ?, address = ?, parentName = ?, parentEmail = ?, parentContact = ?, cast = ?, region = ?, yearOfAdmission = ? WHERE rollNumber = ?`,
+      args: [
+        firstName,
+        lastName,
+        gender,
+        dob,
+        address,
+        parentName,
+        parentEmail,
+        parentContact,
+        cast,
+        region,
+        yearOfAdmission,
+        rollNumber,
+      ],
+    });
+
+    res.status(200).send("Student details updated successfully");
+  } catch (error) {
+    console.error("Error updating student:", error);
+    res.status(500).send("Failed to update student details");
+  }
+});
+
+// Route to get the number of registered students
+app.get("/studentcount", async (req, res) => {
+  try {
+    // Fetch the count of students from the database
+    const result = await db.execute("SELECT COUNT(*) FROM `Student-info`");
+    const studentCount = result.rows[0]["COUNT(*)"];
+    console.log("Student count:", studentCount);
+
+    // Send the student count as a response
+    res.status(200).json({ studentCount });
+  } catch (error) {
+    console.error("Error fetching student count:", error);
+    res.status(500).send("Failed to fetch student count");
+  }
+});
+
+// Student Registration end here
+
+// Fee Update Start From Here
+// New route to update fee status UPDATED FROM HERE
+app.put("/updateFeeStatus/:rollNumber", async (req, res) => {
+  const { rollNumber } = req.params;
+  const { feeStatus } = req.body;
+
+  // Validate fee status
+  if (!["PAID", "UNPAID", "PARTIALLY PAID"].includes(feeStatus)) {
+    return res.status(400).send({ error: "Invalid fee status" });
+  }
+
+  try {
+    // Update fee status for the specified student
+    await db.execute({
+      sql: `UPDATE "Student-info" SET feeStatus = ? WHERE rollNumber = ?`,
+      args: [feeStatus, rollNumber],
+    });
+    res.status(200).send("Fee status updated successfully");
+  } catch (error) {
+    console.error("Error updating fee status:", error);
+    res.status(500).send({ error: "Failed to update fee status" });
+  }
+});
+
+// New route to fetch students with fee status
+app.get("/studentsWithFeeStatus", async (req, res) => {
+  try {
+    // Fetch roll number, name, and fee status for all students
+    const result = await db.execute(
+      `SELECT rollNumber, firstName, lastName, feeStatus FROM "Student-info"`
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching students with fee status:", error);
+    res.status(500).send("Failed to retrieve data");
+  }
+});
+
+// Fee Update End From here
+
+
+// Marks code Start From Here
+
+app.get("/allexamreport", async (req, res) => {
+  try {
+    // Execute the query to fetch all students from the "Student_Marks" table
+    const result = await db.execute("SELECT * FROM `Student_Marks`");
+    // Send the result as a response
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching students:", error);
+    res.status(500).send("Failed to retrieve students");
+  }
+});
+
+// Get exam report for a single student by roll number (with name)
+app.get("/report/:id", async (req, res) => {
+  const { id } = req.params; // Extract roll number from the URL parameter
+  console.log("Received roll number:", id); // Debug: Print received roll number
+
+  if (!id) {
+    return res.status(400).json({ message: "Roll number is required" });
+  }
+
+  try {
+    // Fetch the student's name and exam report by joining "Student-info" and "Student_Marks"
+    const result = await db.execute(
+      `SELECT si.rollNumber, si.firstName, si.lastName, sm.subject, sm.marks, sm.grade, sm.typeofexam
+       FROM "Student-info" si
+       JOIN "Student_Marks" sm ON si.rollNumber = sm.rollNumber
+       WHERE si.rollNumber = ?`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: `No exam reports found for roll number ${id}` });
+    }
+
+    console.log("Fetched data:", result.rows); // Add this line to debug
+
+    // Send the result as a response, including the student's name and marks
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(`Error fetching exam report for roll number ${id}:`, error);
+    res.status(500).send("Failed to retrieve the exam report");
+  }
+});
+
+// Add Exam Report
+app.post("/addexamreport", async (req, res) => {
+  const { rollNumber, examData } = req.body;  // examData is an array of subjects and their details
+
+  console.log("Received roll number:", rollNumber); // Debug: Print received roll number
+
+  if (!rollNumber || !examData || !Array.isArray(examData)) {
+    return res.status(400).json({ error: 'Invalid input. Please provide rollNumber and examData array' });
+  }
+
+  try {
+    // Loop through each subject's exam data and insert or update the records into the database
+    for (let i = 0; i < examData.length; i++) {
+      const { subject, marks, grade, typeofexam } = examData[i];
+
+      // Ensure that all required fields are provided
+      if (!subject || !marks || !grade || !typeofexam) {
+        return res.status(400).json({ error: 'Missing required fields in exam data' });
+      }
+
+      // Check if the record already exists
+      const existingRecord = await db.execute(
+        "SELECT * FROM `Student_Marks` WHERE `rollNumber` = ? AND `subject` = ? AND `typeofexam` = ?",
+        [rollNumber, subject, typeofexam]
+      );
+
+      if (existingRecord.rows.length > 0) {
+        // Update the existing record
+        await db.execute(
+          "UPDATE `Student_Marks` SET `marks` = ?, `grade` = ? WHERE `rollNumber` = ? AND `subject` = ? AND `typeofexam` = ?",
+          [marks, grade, rollNumber, subject, typeofexam]
+        );
+      } else {
+        // Insert the new record
+        await db.execute(
+          "INSERT INTO `Student_Marks` (`rollNumber`, `subject`, `marks`, `grade`, `typeofexam`) VALUES (?, ?, ?, ?, ?)",
+          [rollNumber, subject, marks, grade, typeofexam]
+        );
+      }
+    }
+
+    res.status(201).json({ message: 'Exam report(s) added/updated successfully' });
+  } catch (error) {
+    console.error("Error adding/updating exam report(s):", error);
+    res.status(500).send("Failed to add/update exam report(s)");
+  }
+});
+
+// Deleting
+app.delete("/deletegrade/:grade", async (req, res) => {
+  const { grade } = req.params;
+  try {
+    const result = await db.execute("DELETE FROM `Student_Marks` WHERE `grade` = ?", [grade]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: `No data found for grade ${grade}` });
+    }
+    res.status(200).json({ message: `Data for grade ${grade} deleted successfully` });
+  } catch (error) {
+    console.error(`Error deleting data for grade ${grade}:`, error);
+    res.status(500).send("Failed to delete the grade data");
+  }
+});
+
+
+// Marks code End From Here
+
 
 // Route to get the list of classes
 app.get("/api/timetables/classes", (req, res) => {
@@ -173,96 +511,75 @@ app.post("/api/exam-timetables/upload/:class", upload.single("file"), (req, res)
       }
     );
   };
-
-  if (examTimetableFiles[className]) {
-    deleteFile(
-      examTimetableFiles[className],
-      () => uploadNewFile(),
-      (error) => {
-        console.error("Error deleting old file:", error);
-        res.status(500).send(error);
+      
+      if (examTimetableFiles[className]) {
+        deleteFile(
+          examTimetableFiles[className],
+          () => uploadNewFile(),
+          (error) => {
+            console.error("Error deleting old file:", error);
+            res.status(500).send(error);
+          }
+        );
+      } else {
+        uploadNewFile();
       }
-    );
-  } else {
-    uploadNewFile();
-  }
-});
-
-// Route to delete exam timetable for a specific class
-app.delete("/api/exam-timetables/delete/:class", (req, res) => {
-  const className = req.params.class;
-  if (!examTimetableFiles[className]) {
-    return res.status(400).send("No file to delete.");
-  }
-
-  deleteFile(
-    examTimetableFiles[className],
-    () => {
-      delete examTimetableFiles[className];
-      res.send({ message: "File deleted successfully" });
-    },
-    (error) => {
-      console.error("Error deleting file:", error);
-      res.status(500).send(error);
-    }
-  );
-});
-
-// Route to get the list of PDFs for a specific class' exam timetable
-app.get("/api/exam-timetables/view/:class", (req, res) => {
-  const className = req.params.class;
-  const folderName = `Exam_Timetables/${className}`;
-
-  imagekit.listFiles({
-    path: folderName,
-    fileType: 'all',
-  }, (error, result) => {
-    if (error) {
-      console.error('Error fetching file list:', error);
-      return res.status(500).send(error);
-    }
-
-    // Map the result to only include the necessary information
-    const pdfFiles = result.map(file => ({
-      fileName: file.name,
-      url: file.url,
-      fileId: file.fileId
-    }));
-
-    res.json(pdfFiles);
-  });
-});
-
-
-// Attendance routes
-const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
-
-const auth = new google.auth.GoogleAuth({
-  credentials,
-  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-});
-const sheets = google.sheets({ version: "v4", auth });
-
-// Utility: Get current date in IST format
-const getISTDate = () => {
-  const now = new Date();
-  const istOffset = 5.5 * 60 * 60 * 1000; // IST offset
-  const istTime = new Date(now.getTime() + istOffset);
-  const year = istTime.getUTCFullYear();
-  const month = String(istTime.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(istTime.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-// Middleware: Validate request body
-const validateRequestBody = (keys) => (req, res, next) => {
-  const missingKeys = keys.filter((key) => !req.body[key]);
-  if (missingKeys.length > 0) {
-    return res.status(400).json({ error: `Missing required fields: ${missingKeys.join(", ")}` });
-  }
-  next();
-};
+      });
+      
+      // Route to delete exam timetable for a specific class
+      app.delete("/api/exam-timetables/delete/:class", (req, res) => {
+        const className = req.params.class;
+        if (!examTimetableFiles[className]) {
+          return res.status(400).send("No file to delete.");
+        }
+      
+        deleteFile(
+          examTimetableFiles[className],
+          () => {
+            delete examTimetableFiles[className];
+            res.send({ message: "File deleted successfully" });
+          },
+          (error) => {
+            console.error("Error deleting file:", error);
+            res.status(500).send(error);
+          }
+        );
+      });
+      
+      // Route to get the list of PDFs for a specific class' exam timetable
+      app.get("/api/exam-timetables/view/:class", (req, res) => {
+        const className = req.params.class;
+        const folderName = `Exam_Timetables/${className}`;
+      
+        imagekit.listFiles({
+          path: folderName,
+          fileType: 'all',
+        }, (error, result) => {
+          if (error) {
+            console.error('Error fetching file list:', error);
+            return res.status(500).send(error);
+          }
+      
+          // Map the result to only include the necessary information
+          const pdfFiles = result.map(file => ({
+            fileName: file.name,
+            url: file.url,
+            fileId: file.fileId
+          }));
+      
+          res.json(pdfFiles);
+        });
+      });
+      
+      // Attendance routes
+      const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+      const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+      
+      const auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+      });
+      const sheets = google.sheets({ version: "v4", auth });
 
 // Endpoint to save attendance
 app.post("/save", validateRequestBody(["Class", "RollNumber", "NameOfTheStudent", "ParentEmail", "Section"]), async (req, res) => {
@@ -582,7 +899,8 @@ app.post("/sheet/create", async (req, res) => {
     }
   });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+  // Start the server
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });

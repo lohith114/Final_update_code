@@ -1,29 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import {
-  Container,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  CircularProgress,
-  Alert,
-  Button,
-  Box,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle
-} from '@mui/material';
+import * as XLSX from "xlsx";
+import { Grid, Button, CircularProgress, Select, MenuItem, InputLabel, FormControl, Box, TextField } from "@mui/material";
 
 const ViewFullAttendance = () => {
   const [selectedClass, setSelectedClass] = useState("");
@@ -31,6 +9,9 @@ const ViewFullAttendance = () => {
   const [loading, setLoading] = useState(false);
   const [logMessage, setLogMessage] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
+  const [notification, setNotification] = useState("");
+  const [showNotification, setShowNotification] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");  // State for search query
 
   const classes = ["Class1", "Class2", "Class3", "Class4", "Class5", "Class6", "Class7", "Class8", "Class9", "Class10"];
 
@@ -46,7 +27,11 @@ const ViewFullAttendance = () => {
     try {
       const response = await axios.get(`http://localhost:5000/attendance/full/${classSheet}`);
       setAttendanceData(response.data.attendanceData);
-      setLogMessage(`Full attendance sheet for ${classSheet} fetched successfully!`);
+      setNotification(`Full attendance sheet for ${classSheet} fetched successfully!`);
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false); // Hide notification after 3 seconds
+      }, 3000); 
     } catch (error) {
       console.error("Error fetching full attendance sheet:", error);
       setLogMessage(`Failed to fetch full attendance sheet for ${classSheet}.`);
@@ -61,8 +46,23 @@ const ViewFullAttendance = () => {
     setLogMessage("");
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleSearch = () => {
+    if (searchQuery) {
+      const filteredData = attendanceData.filter(row =>
+        row.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        row.rollNumber.toString().includes(searchQuery)
+      );
+      setAttendanceData(filteredData);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery(""); // Clear the search query
+    fetchAttendanceData(selectedClass); // Reset to full attendance data
   };
 
   const handleDelete = async () => {
@@ -89,126 +89,154 @@ const ViewFullAttendance = () => {
     setOpenDialog(false);
   };
 
-  return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 6, backgroundColor: '#f7f7f7', borderRadius: '8px', boxShadow: 3 }}>
-      <Typography variant="h4" gutterBottom align="center" fontWeight="bold" color="primary" sx={{ mb: 3 }}>
-        Full Attendance Sheet
-      </Typography>
-      
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Select Class</InputLabel>
-        <Select
-          value={selectedClass}
-          onChange={handleClassChange}
-          sx={{
-            backgroundColor: '#fff',
-            borderRadius: '8px',
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': { borderColor: '#ccc' },
-              '&:hover fieldset': { borderColor: '#4caf50' },
-            },
-          }}
-        >
-          <MenuItem value="" disabled>Select class</MenuItem>
-          {classes.map((className, index) => (
-            <MenuItem key={index} value={className} sx={{ backgroundColor: '#f1f1f1', borderRadius: '5px', marginBottom: '4px' }}>
-              {className}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+  const handleExportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(attendanceData.map(row => ({
+      'Roll Number': row.rollNumber,
+      'Student Name': row.studentName,
+      ...row.dates.reduce((acc, date, index) => ({ ...acc, [date]: row.statuses[index] }), {})
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
+    XLSX.writeFile(workbook, `Attendance_${selectedClass}.xlsx`);
+  };
 
-      {logMessage && (
-        <Alert severity={logMessage.includes('failed') ? 'error' : 'success'} sx={{ mb: 2 }}>
-          {logMessage}
-        </Alert>
-      )}
+  return (
+    <div style={{ maxWidth: '1200px', margin: '2rem auto' }}>
+      {/* Heading moved to the very top */}
+      <h2 style={{ textAlign: 'center', marginTop: '0', marginBottom: '-3rem' }}>Full Attendance Sheet</h2>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+        <FormControl variant="outlined" sx={{ minWidth: 160 }}>
+          <InputLabel>Select Class</InputLabel>
+          <Select
+            value={selectedClass}
+            onChange={handleClassChange}
+            label="Select Class"
+            disabled={loading}
+          >
+            <MenuItem value="" disabled>Select class</MenuItem>
+            {classes.map((className, index) => (
+              <MenuItem key={index} value={className}>{className}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Grid container spacing={2} justifyContent="flex-end">
+          <Grid item>
+            <Button
+              variant="contained"
+              sx={{ backgroundColor: '#2e7d32', width: '150px', '&:hover': { backgroundColor: '#388e3c' } }}
+              onClick={handleExportToExcel}
+              disabled={loading || !attendanceData.length}
+            >
+              Export to Excel
+            </Button>
+          </Grid>
+          <Grid item>
+            <Button
+              variant="contained"
+              sx={{ backgroundColor: '#b71c1c', width: '150px', '&:hover': { backgroundColor: '#d32f2f' } }}
+              onClick={handleOpenDialog}
+              disabled={loading || !attendanceData.length}
+            >
+              Delete
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* Search Bar moved to top-right */}
+      <Box sx={{
+        position: 'fixed', top: '20px', right: '20px', display: 'flex', alignItems: 'center',
+        zIndex: 1000, backgroundColor: '#fff', padding: '0.5rem', borderRadius: '8px'
+      }}>
+        <TextField
+          label="Search"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          variant="outlined"
+          size="small"
+          sx={{ marginRight: 2 }}
+        />
+        <Button
+          variant="contained"
+          onClick={handleSearch}
+          sx={{ backgroundColor: '#388e3c', '&:hover': { backgroundColor: '#2e7d32' } }}
+        >
+          Search
+        </Button>
+        {/* Clear Search Button */}
+        <Button
+          variant="outlined"
+          onClick={handleClearSearch}
+          sx={{ marginLeft: 2, backgroundColor: '#d32f2f', color: '#fff', '&:hover': { backgroundColor: '#b71c1c' } }}
+        >
+          Clear
+        </Button>
+      </Box>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+        <Box sx={{ textAlign: 'center', margin: '2rem 0' }}>
           <CircularProgress />
         </Box>
       ) : (
         <>
           {attendanceData.length > 0 && (
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', my: 3 }}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handlePrint}
-                sx={{
-                  borderRadius: '20px',
-                  padding: '10px 20px',
-                  '&:hover': { backgroundColor: '#388e3c' }
-                }}
-              >
-                Print
-              </Button>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={handleOpenDialog}
-                sx={{
-                  borderRadius: '20px',
-                  padding: '10px 20px',
-                  '&:hover': { backgroundColor: '#d32f2f' }
-                }}
-              >
-                Delete
-              </Button>
+            <Box sx={{ overflowX: 'auto', marginBottom: 2 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#e8f5e9' }}>
+                    <th style={{ padding: '0.75rem', border: '1px solid #ddd', fontWeight: 'bold', color: '#388e3c' }}>Roll Number</th>
+                    <th style={{ padding: '0.75rem', border: '1px solid #ddd', fontWeight: 'bold', color: '#388e3c' }}>Student Name</th>
+                    {attendanceData[0].dates.map((date, index) => (
+                      <th key={index} style={{ padding: '0.75rem', border: '1px solid #ddd', fontWeight: 'bold', color: '#388e3c' }}>{date}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {attendanceData.map((row, rowIndex) => (
+                    <tr key={rowIndex} style={{ backgroundColor: rowIndex % 2 === 0 ? '#fafafa' : '#fff' }}>
+                      <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{row.rollNumber}</td>
+                      <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{row.studentName}</td>
+                      {row.statuses.map((status, index) => (
+                        <td key={index} style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{status}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </Box>
           )}
-
-          <TableContainer component={Paper} sx={{ borderRadius: '8px' }}>
-            <Table sx={{ minWidth: 650 }}>
-              <TableHead sx={{ backgroundColor: '#e8f5e9' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold', color: '#388e3c' }}>Roll Number</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', color: '#388e3c' }}>Student Name</TableCell>
-                  {attendanceData.length > 0 && attendanceData[0].dates.map((date, index) => (
-                    <TableCell key={index} sx={{ fontWeight: 'bold', color: '#388e3c' }}>{date}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {attendanceData.map((row, rowIndex) => (
-                  <TableRow
-                    key={rowIndex}
-                    sx={{
-                      '&:hover': { backgroundColor: '#f1f1f1' },
-                      backgroundColor: rowIndex % 2 === 0 ? '#fafafa' : '#fff',
-                    }}
-                  >
-                    <TableCell>{row.rollNumber}</TableCell>
-                    <TableCell>{row.studentName}</TableCell>
-                    {row.statuses.map((status, index) => (
-                      <TableCell key={index}>{status}</TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
         </>
       )}
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 'bold', color: '#d32f2f' }}>Delete Attendance Sheet</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete the full attendance sheet for {selectedClass}?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary" variant="outlined">
-            Cancel
-          </Button>
-          <Button onClick={handleDelete} color="secondary" variant="contained">
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+      {openDialog && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ backgroundColor: '#fff', padding: '1.5rem', borderRadius: '10px', width: '400px', maxWidth: '90%' }}>
+            <h3 style={{ color: '#d32f2f', marginBottom: '1rem' }}>Delete Attendance Sheet</h3>
+            <p>Are you sure you want to delete the full attendance sheet for {selectedClass}?</p>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+              <Button onClick={handleCloseDialog} variant="outlined" color="primary">
+                Cancel
+              </Button>
+              <Button onClick={handleDelete} variant="contained" color="error">
+                Confirm
+              </Button>
+            </Box>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Pop-up */}
+      {showNotification && (
+        <div style={{
+          position: 'fixed', top: '20px', right: '20px', backgroundColor: '#4caf50', color: '#fff',
+          padding: '1rem', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 1000
+        }}>
+          {notification}
+        </div>
+      )}
+    </div>
   );
 };
 

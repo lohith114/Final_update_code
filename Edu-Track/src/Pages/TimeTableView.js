@@ -9,10 +9,12 @@ import {
   Button
 } from '@mui/material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import { useNavigate } from 'react-router-dom';
 
 const colors = ['#FFEBEE', '#E3F2FD', '#E8F5E9', '#FFF3E0', '#F3E5F5', '#E0F2F1', '#F1F8E9', '#EDE7F6', '#FCE4EC'];
 
 function TimeTableView() {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [pdfClasses, setPdfClasses] = useState({});
   const [selectedClass, setSelectedClass] = useState('');
@@ -104,7 +106,17 @@ function TimeTableView() {
         ))}
       </Grid>
 
-      {loading && <CircularProgress sx={{ mt: 3 }} />}
+      {loading && (
+        <CircularProgress
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 9999,  // Optional, ensures the loader is on top of other content
+          }}
+        />
+      )}
 
       {selectedClass && (
         <Box sx={{ mt: 3, width: '100%' }}>
@@ -152,6 +164,25 @@ function TimeTableView() {
           </Grid>
         </Box>
       )}
+
+      {/* Back Button */}
+      <Button
+        onClick={() => navigate('/time-table')}
+        variant="outlined"
+        size="large"
+        sx={{
+          position: 'absolute',      // Positioning the button at the bottom
+          bottom: 30,                // Distance from the bottom
+          left: '50%',               // Center the button horizontally
+          transform: 'translateX(-50%)', // Adjust for exact centering
+          width: 200,                // Increase the width of the button
+          padding: '10px 24px',      // Adjust padding for a larger button
+          fontSize: '16px',          // Increase font size
+          backgroundColor: "#aed581" // Button background color
+        }}
+      >
+        Back
+      </Button>
     </Box>
   );
 }

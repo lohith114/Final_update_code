@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../Firebase/Firebase';
+import logo from './Logo_LMKS (1).png';
 import { onAuthStateChanged } from 'firebase/auth';
 import {
     Drawer,
@@ -9,38 +10,38 @@ import {
     ListItem,
     ListItemIcon,
     ListItemText,
-    IconButton,
     Box,
 } from '@mui/material';
 import {
     Home,
     School,
     Payment,
-    CalendarToday,
-    CloudUpload,
-    TableChart,
-    Menu,
-    Close,
+    Schedule,
+    CheckCircle,
+    EventNote,
+    AddCircle,
+    People,
+    Assessment,  
 } from '@mui/icons-material';
 
 const Sidebar = ({ children }) => {
     const [isCollapsed, setIsCollapsed] = useState(true);
+    const [isHovered, setIsHovered] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
-                setIsAuthenticated(true); // User is authenticated
+                setIsAuthenticated(true);
             } else {
-                setIsAuthenticated(false); // User is not authenticated
-                navigate('/'); // Redirect to login
+                setIsAuthenticated(false);
+                navigate('/');
             }
         });
         return () => unsubscribe();
     }, [navigate]);
 
-    // Render nothing until authentication status is confirmed
     if (!isAuthenticated) {
         return null;
     }
@@ -50,11 +51,14 @@ const Sidebar = ({ children }) => {
     };
 
     const menuItems = [
-        { text: 'Home', icon: <Home />, path: '/welcome' },
-        { text: 'Fee Portal', icon: <Payment />, path: '/fee-portal' },
-        { text: 'Time Table', icon: <TableChart />, path: '/time-table' },
-        { text: 'Attendance', icon: <CalendarToday />, path: '/attendance' },
-        { text: 'Exam Dashboard', icon: <CloudUpload />, path: '/Exam-Dashboard' },
+        { text: 'Home', icon: <Home sx={{ marginTop: '-2px' }} />, path: '/welcome' },
+        { text: 'Student Registration', icon: <AddCircle />, path: '/Student-Registration' },
+        { text: 'View Registered Students', icon: <People />, path: '/View-Registered-Students' },
+        { text: 'Manage Fee Status', icon: <Payment />, path: '/Manage-Fee-Status' },
+        { text: 'Time Table', icon: <Schedule />, path: '/time-table' },
+        { text: 'Attendance', icon: <CheckCircle />, path: '/attendance' },
+        { text: 'Marks Management', icon: <Assessment />, path: '/Marks-Management' },
+        { text: 'Exam Dashboard', icon: <EventNote />, path: '/Exam-Dashboard' },
         { text: 'School Info', icon: <School />, path: '/school-info' },
     ];
 
@@ -62,13 +66,20 @@ const Sidebar = ({ children }) => {
         <Box sx={{ display: 'flex' }}>
             <Drawer
                 variant="permanent"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
                 sx={{
-                    width: isCollapsed ? 60 : 240,
+                    width: isCollapsed && !isHovered ? 70 : 250,
                     flexShrink: 0,
                     '& .MuiDrawer-paper': {
-                        width: isCollapsed ? 60 : 240,
+                        width: isCollapsed && !isHovered ? 70 : 250,
                         boxSizing: 'border-box',
-                        backgroundColor: '#333',
+                        background: isHovered
+                            ? 'linear-gradient(145deg, rgba(62, 0, 47, 0.8), rgba(62, 0, 47, 0.9))'
+                            : 'linear-gradient(145deg, rgba(62, 0, 47, 0.8), rgba(62, 0, 47, 0.9))',
+                        backdropFilter: 'blur(1px)',
+                        border: 'none',
+                        boxShadow: 'none',
                         color: '#fff',
                         transition: 'width 0.3s ease',
                         zIndex: 900,
@@ -77,73 +88,82 @@ const Sidebar = ({ children }) => {
                     },
                 }}
             >
+                {/* Logo at the top of Sidebar */}
                 <Box
                     sx={{
                         display: 'flex',
-                        alignItems: 'center',
                         justifyContent: 'center',
-                        padding: 1,
-                        backgroundColor: '#444',
-                        borderBottom: '1px solid #555',
+                        alignItems: 'center',
+                        padding: '10px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
                     }}
                 >
-                    <IconButton
-                        onClick={toggleSidebar}
-                        sx={{
-                            color: '#fff',
-                            transition: 'transform 0.3s',
-                            transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
+                    <img
+                        src={logo}
+                        alt="Logo"
+                        style={{
+                            width: '100px',
+                            height: 'auto',
+                            transition: 'all 0.3s ease',
                         }}
-                    >
-                        {isCollapsed ? <Menu /> : <Close />}
-                    </IconButton>
+                    />
                 </Box>
 
-                <List>
-                    {menuItems.map((item) => (
-                        <ListItem
-                            button
-                            key={item.text}
-                            component={NavLink}
-                            to={item.path}
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                margin: '5px 10px',
-                                padding: 2,
-                                color: '#fff',
-                                textDecoration: 'none',
-                                borderRadius: 1,
-                                transition: 'background-color 0.3s ease, transform 0.2s ease',
-                                '&:hover': {
-                                    backgroundColor: '#555',
-                                    transform: 'scale(1.05)',
-                                },
-                                '&.active': {
-                                    backgroundColor: '#444',
-                                    color: '#fff',
-                                },
-                            }}
-                        >
-                            <ListItemIcon
-                                sx={{
-                                    color: 'inherit',
-                                }}
-                            >
-                                {item.icon}
-                            </ListItemIcon>
-                            {!isCollapsed && (
-                                <ListItemText primary={item.text} sx={{ color: 'inherit' }} />
-                            )}
-                        </ListItem>
-                    ))}
-                </List>
+                {/* Navigation Menu */}
+                <List sx={{ marginTop: '15px' }}> {/* Adds margin to the entire list */}
+    {menuItems.map((item) => (
+        <ListItem
+            button
+            key={item.text}
+            component={NavLink}
+            to={item.path}
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                margin: '5px 10px',
+                padding: '10px',
+                color: '#FFFFFF', // Icons
+                textDecoration: 'none',
+                borderRadius: '10px',
+                transition: 'background-color 0.3s ease, transform 0.2s ease',
+                '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    transform: 'scale(1.05)',
+                },
+                '&.active': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                },
+            }}
+        >
+            <ListItemIcon
+                sx={{
+                    color: 'inherit',
+                    justifyContent: 'center',
+                    minWidth: 'auto',
+                }}
+            >
+                {item.icon}
+            </ListItemIcon>
+            <ListItemText
+                primary={item.text}
+                sx={{
+                    color: 'inherit',
+                    fontWeight: 500,
+                    display: isCollapsed && !isHovered ? 'none' : 'block',
+                    whiteSpace: 'nowrap',
+                }}
+            />
+        </ListItem>
+    ))}
+</List>
+
             </Drawer>
 
             <Box
                 sx={{
                     flexGrow: 1,
-                    marginLeft: isCollapsed ? '60px' : '240px',
+                    marginLeft: isCollapsed && !isHovered ? '70px' : '250px',
                     padding: 2,
                     transition: 'margin-left 0.3s ease',
                 }}

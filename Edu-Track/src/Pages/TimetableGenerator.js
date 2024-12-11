@@ -119,20 +119,31 @@ const TimetableGenerator = () => {
                 fontSize: 25, // Change this value to adjust the font size
             },
             headStyles: {
-                fontSize: 28, // Change this value to adjust the header font size
+                fontSize: 25, // Change this value to adjust the header font size
             },
             bodyStyles: {
-                fontSize: 25, // Change this value to adjust the body font size
+                fontSize: 20, // Change this value to adjust the body font size
             },
         });
     
         doc.save('timetable.pdf');
     };
-    
 
     return (
-        <Box p={4} display="flex" flexDirection="column" gap={1} alignItems="center">
-            <FormControl fullWidth>
+        <Box p={2} display="flex" flexDirection="column" gap={1} alignItems="center">
+            {/* Back Button - Aligned to the Right */}
+            <Box display="flex" justifyContent="flex-end" width="100%" mb={2}>
+            <Button
+    variant="contained"
+    style={{ backgroundColor: '#7cb342' }}
+    onClick={() => window.history.back()}
+>
+    Back
+</Button>
+
+            </Box>
+
+            <FormControl fullWidth size="small" sx={{ maxWidth: 250 }}>
                 <InputLabel>Student Class</InputLabel>
                 <Select
                     value={studentClass}
@@ -146,11 +157,11 @@ const TimetableGenerator = () => {
                 </Select>
             </FormControl>
 
-            <Grid container spacing={3}>
+            <Grid container spacing={2} justifyContent="center">
                 <Grid item xs={12} md={6}>
-                    <Box component="form" onSubmit={handleSubmit} display="flex" flexDirection="column" gap={2}>
-                        <h3>Add Class</h3>
-                        <FormControl fullWidth>
+                    <Box component="form" onSubmit={handleSubmit} display="flex" flexDirection="column" gap={1}>
+                        <h3 style={{ fontSize: '1rem' }}>Add Class</h3>
+                        <FormControl fullWidth size="small">
                             <InputLabel>Day</InputLabel>
                             <Select
                                 name="day"
@@ -170,6 +181,8 @@ const TimetableGenerator = () => {
                             value={formData.subject}
                             onChange={handleChange}
                             required
+                            size="small"
+                            sx={{ marginBottom: 1 }}
                         />
                         <TextField
                             label="Start Time"
@@ -179,6 +192,7 @@ const TimetableGenerator = () => {
                             onChange={handleChange}
                             required
                             InputLabelProps={{ shrink: true }}
+                            size="small"
                         />
                         <TextField
                             label="End Time"
@@ -188,16 +202,17 @@ const TimetableGenerator = () => {
                             onChange={handleChange}
                             required
                             InputLabelProps={{ shrink: true }}
+                            size="small"
                         />
-                        <Button type="submit" variant="contained" color="primary">
+                        <Button type="submit" variant="contained" color="primary" size="small">
                             Add Class
                         </Button>
                     </Box>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <Box component="form" onSubmit={handleLunchSubmit} display="flex" flexDirection="column" gap={2}>
-                        <h3>Add Lunch Break</h3>
+                    <Box component="form" onSubmit={handleLunchSubmit} display="flex" flexDirection="column" gap={1}>
+                        <h3 style={{ fontSize: '1rem' }}>Add Lunch Break</h3>
                         <TextField
                             label="Start Time"
                             name="startTime"
@@ -206,6 +221,8 @@ const TimetableGenerator = () => {
                             onChange={handleLunchChange}
                             required
                             InputLabelProps={{ shrink: true }}
+                            size="small"
+                            sx={{ marginBottom: 1 }}
                         />
                         <TextField
                             label="End Time"
@@ -215,6 +232,7 @@ const TimetableGenerator = () => {
                             onChange={handleLunchChange}
                             required
                             InputLabelProps={{ shrink: true }}
+                            size="small"
                         />
                         <FormControlLabel
                             control={
@@ -222,6 +240,7 @@ const TimetableGenerator = () => {
                                     name="applyToAllDays"
                                     checked={lunchBreak.applyToAllDays}
                                     onChange={handleLunchChange}
+                                    size="small"
                                 />
                             }
                             label="Apply to All Days"
@@ -237,81 +256,68 @@ const TimetableGenerator = () => {
                                                 value={day}
                                                 checked={lunchBreak.customDays.includes(day)}
                                                 onChange={handleLunchChange}
-                                                />
-                                            }
-                                            label={day}
-                                        />
-                                    ))}
-                                </FormGroup>
-                            )}
-                            <Button type="submit" variant="contained" color="secondary">
-                                Add Lunch Break
-                            </Button>
-                        </Box>
-                    </Grid>
-                </Grid>
-                
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Day</TableCell>
-                                {timeSlots.map((slot) => (
-                                    <TableCell key={slot}>
-                                        {slot}
-                                        <Button 
-                                            size="small" 
-                                            color="error" 
-                                            onClick={() => handleDeleteTimeSlot(slot)}
-                                        >
-                                            X
-                                        </Button>
-                                    </TableCell>
+                                                size="small"
+                                            />
+                                        }
+                                        label={day}
+                                    />
                                 ))}
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {daysOfWeek.map((day) => (
-                                <TableRow key={day}>
-                                    <TableCell>{day}</TableCell>
-                                    {timeSlots.map((slot) => {
-                                        const entry = timetable.find((entry) => entry.day === day && `${entry.startTime} - ${entry.endTime}` === slot);
-                                        const isLunchBreak = lunchBreak.applyToAllDays
-                                            ? `${lunchBreak.startTime} - ${lunchBreak.endTime}` === slot
-                                            : lunchBreak.customDays.includes(day) && `${lunchBreak.startTime} - ${lunchBreak.endTime}` === slot;
-                                        return (
-                                            <TableCell key={slot}>
-                                                {entry ? (
-                                                    <Box display="flex" justifyContent="space-between">
-                                                        <span>{entry.subject}</span>
-                                                        <Button
-                                                            size="small"
-                                                            color="error"
-                                                            onClick={() => handleDelete(day, slot)}
-                                                        >
-                                                            X
-                                                        </Button>
-                                                    </Box>
-                                                ) : isLunchBreak ? 'Lunch Break' : ''}
-                                            </TableCell>
-                                        );
-                                    })}
-                                </TableRow>
+                            </FormGroup>
+                        )}
+                        <Button type="submit" variant="contained" color="primary" size="small">
+                            Add Lunch Break
+                        </Button>
+                    </Box>
+                </Grid>
+            </Grid>
+
+            <TableContainer component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Day</TableCell>
+                            {timeSlots.map((slot, index) => (
+                                <TableCell key={index} size="small">{slot}</TableCell>
                             ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-                
-                <Button
-                    variant="contained"
-                    color="success"
-                    onClick={generatePDF}
-                    disabled={!timetable.length}
-                >
-                    Generate PDF
-                </Button>
-                </Box>
-            
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {daysOfWeek.map((day) => (
+                            <TableRow key={day}>
+                                <TableCell>{day}</TableCell>
+                                {timeSlots.map((slot, index) => {
+                                    const entry = timetable.find(
+                                        (entry) => entry.day === day && `${entry.startTime} - ${entry.endTime}` === slot
+                                    );
+                                    const isLunchBreak = lunchBreak.applyToAllDays
+                                        ? `${lunchBreak.startTime} - ${lunchBreak.endTime}` === slot
+                                        : lunchBreak.customDays.includes(day) && `${lunchBreak.startTime} - ${lunchBreak.endTime}` === slot;
+                                    return (
+                                        <TableCell key={index}>
+                                            {entry ? entry.subject : isLunchBreak ? 'Lunch Break' : ''}
+                                            {entry && (
+                                                <Button
+                                                    size="small"
+                                                    color="error"
+                                                    onClick={() => handleDelete(day, slot)}
+                                                    style={{ marginLeft: 8 }}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            )}
+                                        </TableCell>
+                                    );
+                                })}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+
+            <Button onClick={generatePDF} variant="contained" color="primary" style={{ marginTop: 16, fontSize: '0.875rem' }}>
+                Generate PDF
+            </Button>
+        </Box>
     );
 };
 

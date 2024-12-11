@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../Firebase/Firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import axios from 'axios';
 import Header from './Header';
 import {
     Box,
@@ -9,31 +10,35 @@ import {
     Card,
     CardContent,
     Grid,
-    Button,
-    IconButton,
-    Tooltip,
     CircularProgress,
+    Button,
+    Container
 } from '@mui/material';
-import { CalendarToday, BarChart, Info } from '@mui/icons-material';
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { LocalizationProvider, StaticDatePicker } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const graphData = [
-    { name: 'Mon', value: 400 },
-    { name: 'Tue', value: 300 },
-    { name: 'Wed', value: 200 },
-    { name: 'Thu', value: 278 },
-    { name: 'Fri', value: 189 },
-    { name: 'Sat', value: 239 },
-    { name: 'Sun', value: 349 },
-];
-
-function Welcome() {
+const Welcome = () => {
     const [userEmail, setUserEmail] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedDate, setSelectedDate] = useState(null);
+    const [studentCount, setStudentCount] = useState(0);
+    const [userCount, setUserCount] = useState(0);
+    const [attendanceData, setAttendanceData] = useState([]);
+    const [selectedClass, setSelectedClass] = useState("");
+    const [clickedButton, setClickedButton] = useState(null); // Track clicked button
     const navigate = useNavigate();
+
+    const classes = ["Class1", "Class2", "Class3", "Class4", "Class5", "Class6", "Class7", "Class8", "Class9", "Class10"];
+    const classButtons = [
+        { label: "C1", class: "Class1", color: "#FF5733" },
+        { label: "C2", class: "Class2", color: "#33FF57" },
+        { label: "C3", class: "Class3", color: "#3357FF" },
+        { label: "C4", class: "Class4", color: "#FF33A1" },
+        { label: "C5", class: "Class5", color: "#FFD433" },
+        { label: "C6", class: "Class6", color: "#33D4FF" },
+        { label: "C7", class: "Class7", color: "#FF8C33" },
+        { label: "C8", class: "Class8", color: "#33FFDD" },
+        { label: "C9", class: "Class9", color: "#F333FF" },
+        { label: "C10", class: "Class10", color: "#FF3357" },
+    ];
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -45,8 +50,48 @@ function Welcome() {
             setIsLoading(false);
         });
 
+        const fetchStudentCount = async () => {
+            try {
+                const response = await axios.get('http://localhost:5000/studentcount');
+                setStudentCount(response.data.studentCount);
+            } catch (error) {
+                console.error('Error fetching student count:', error);
+            }
+        };
+
+        const fetchUserCount = async () => {
+            try {
+                const response = await axios.get('http://localhost:5000/getUsers');
+                setUserCount(response.data.length);
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        };
+
+        fetchStudentCount();
+        fetchUserCount();
+
+        if (selectedClass) {
+            fetchAttendanceData(selectedClass);
+        }
+
         return () => unsubscribe();
-    }, [navigate]);
+    }, [navigate, selectedClass]);
+
+    const fetchAttendanceData = async (classSheet) => {
+        try {
+            const response = await axios.post('http://localhost:5000/attendance/tracker', { classSheet });
+            setAttendanceData(response.data.tracker);
+        } catch (error) {
+            console.error('Error fetching attendance data:', error);
+        }
+    };
+
+    const handleClassChange = (className, label) => {
+        setSelectedClass(className);
+        setAttendanceData([]);
+        setClickedButton(label); // Mark button as clicked
+    };
 
     if (isLoading) {
         return (
@@ -59,99 +104,107 @@ function Welcome() {
     return (
         <div>
             <Header />
-            <Box
-                sx={{
-                    marginTop: '100px',
-                    padding: 3,
-                    backgroundColor: '#f5f7fa',
-                    borderRadius: 2,
-                }}
-            >
-                <Typography variant="h4" sx={{ textAlign: 'center', marginBottom: 4 }}>
-                    Hello, {userEmail}
-                </Typography>
-                <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 4 }}>
-                    Welcome to your dashboard! Explore your activities below.
-                </Typography>
-
+            <Box sx={{ marginTop: '100px', padding: 3, backgroundColor: '#f5f7fa', borderRadius: 2 }}>
                 <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
-                        <Card>
+                    {/* Card for Registered Students Count */}
+                    <Grid item xs={12} md={4}>
+                        <Card sx={{ backgroundColor: '#fce4ec', borderRadius: 2, padding: 3, boxShadow: 3, textAlign: 'center' }}>
                             <CardContent>
-                                <Typography variant="h6" sx={{ marginBottom: 2 }}>
-                                    Weekly Performance
-                                </Typography>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <LineChart data={graphData}>
-                                        <CartesianGrid stroke="#ccc" />
-                                        <XAxis dataKey="name" />
-                                        <YAxis />
-                                        <RechartsTooltip />
-                                        <Line type="monotone" dataKey="value" stroke="#8884d8" />
-                                    </LineChart>
-                                </ResponsiveContainer>
+                                <Typography variant="h6" color="textSecondary" gutterBottom>Registered Students</Typography>
+                                {isLoading ? <CircularProgress /> : <Typography variant="h4" color="#D81B60" sx={{ fontWeight: 'bold' }}>{studentCount}</Typography>}
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} md={6}>
-                        <Card>
+
+                    {/* Card for User Count */}
+                    <Grid item xs={12} md={4}>
+                        <Card sx={{ backgroundColor: '#e8f5e9', borderRadius: 2, padding: 3, boxShadow: 3, textAlign: 'center' }}>
                             <CardContent>
-                                <Typography variant="h6" sx={{ marginBottom: 2 }}>
-                                    Calendar
-                                </Typography>
-                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <StaticDatePicker
-                                        displayStaticWrapperAs="desktop"
-                                        value={selectedDate}
-                                        onChange={(newValue) => setSelectedDate(newValue)}
-                                    />
-                                </LocalizationProvider>
+                                <Typography variant="h6" color="textSecondary" gutterBottom>Total Users</Typography>
+                                {isLoading ? <CircularProgress /> : <Typography variant="h4" color="#388E3C" sx={{ fontWeight: 'bold' }}>{userCount}</Typography>}
                             </CardContent>
                         </Card>
                     </Grid>
                 </Grid>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-around', marginTop: 4 }}>
-                    <Card sx={{ width: '30%' }}>
-                        <CardContent>
-                            <Tooltip title="View Attendance" arrow>
-                                <IconButton color="primary">
-                                    <CalendarToday />
-                                </IconButton>
-                            </Tooltip>
-                            <Typography variant="h6">Attendance</Typography>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                fullWidth
-                                onClick={() => navigate('/attendance')}
-                            >
-                                Check
-                            </Button>
-                        </CardContent>
-                    </Card>
-                    <Card sx={{ width: '30%' }}>
-                        <CardContent>
-                            <Tooltip title="More Info" arrow>
-                                <IconButton color="error">
-                                    <Info />
-                                </IconButton>
-                            </Tooltip>
-                            <Typography variant="h6">Info</Typography>
-                            <Button
-                                variant="contained"
-                                color="error"
-                                fullWidth
-                                onClick={() => navigate('/info')}
-                            >
-                                Learn More
-                            </Button>
-                        </CardContent>
-                    </Card>
+                {/* Main container with buttons on the left */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mt: 2 }}>
+                    {/* Left side: Class Buttons */}
+                    <Box sx={{ width: '250px', display: 'flex', flexDirection: 'column', gap: 2, mt: 16 }}>
+                        {/* Row 1: C1 to C5 */}
+                        <Box sx={{ display: 'flex', gap: 0.4 }}>
+                            {classButtons.slice(0, 5).map((button, index) => (
+                                <Button
+                                    key={index}
+                                    variant="contained"
+                                    onClick={() => handleClassChange(button.class, button.label)}
+                                    sx={{
+                                        width: '50px',
+                                        height: '50px',
+                                        fontSize: '14px',
+                                        borderRadius: '12px', // Rounded corners
+                                        backgroundColor: button.color,
+                                        textTransform: 'none',
+                                        '&:hover': {
+                                            backgroundColor: `${button.color}cc`, // Slightly darker on hover
+                                        },
+                                        animation: clickedButton === button.label ? 'crackEffect 0.3s ease-out forwards' : 'none', // Apply crack effect
+                                    }}
+                                >
+                                    {button.label}
+                                </Button>
+                            ))}
+                        </Box>
+
+                        {/* Row 2: C6 to C10 */}
+                        <Box sx={{ display: 'flex', gap: 0.4 }}>
+                            {classButtons.slice(5).map((button, index) => (
+                                <Button
+                                    key={index}
+                                    variant="contained"
+                                    onClick={() => handleClassChange(button.class, button.label)}
+                                    sx={{
+                                        width: '50px',
+                                        height: '50px',
+                                        fontSize: '14px',
+                                        borderRadius: '12px',
+                                        backgroundColor: button.color,
+                                        textTransform: 'none',
+                                        '&:hover': {
+                                            backgroundColor: `${button.color}cc`,
+                                        },
+                                        animation: clickedButton === button.label ? 'crackEffect 0.3s ease-out forwards' : 'none',
+                                    }}
+                                >
+                                    {button.label}
+                                </Button>
+                            ))}
+                        </Box>
+                    </Box>
+
+                    {/* Right side: Graph Container */}
+                    <Box sx={{ width: 'calc(100% - 300px)', padding: 2 }}>
+                        {/* Attendance Bar Chart */}
+                        {selectedClass && (
+                            <>
+                                <Typography variant="h5" gutterBottom align="center">{selectedClass} %</Typography>
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <BarChart data={attendanceData} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="studentName" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Legend />
+                                        <Bar dataKey="attendancePercentage" fill="#8884d8" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </>
+                        )}
+                    </Box>
                 </Box>
             </Box>
         </div>
     );
-}
+};
 
 export default Welcome;

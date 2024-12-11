@@ -9,19 +9,10 @@ import {
     Grid,
     CircularProgress
 } from '@mui/material';
-import TimetableGenerator from './TimetableGenerator'; // Import the generator code
-import TimetableUpload from './TimeTableUpload'; // Import the upload code
-import TimeTableView from './TimeTableView'; // Import the TimeTableView component
 
 const TimeTable = () => {
     const [authLoading, setAuthLoading] = useState(true);
-    const [view, setView] = useState('timetable'); // 'timetable', 'generator', 'upload', or 'view'
-    const navigate = useNavigate();
-
-    const handleTimetableGenerator = () => setView('generator');
-    const handleTimetableUpload = () => setView('upload');
-    const handleTimetableView = () => setView('view');
-    const handleBackToTimetable = () => setView('timetable');
+    const navigate = useNavigate(); // Using useNavigate for routing
 
     // Authentication check
     useEffect(() => {
@@ -36,6 +27,11 @@ const TimeTable = () => {
         return () => unsubscribe(); // Cleanup on component unmount
     }, [navigate]);
 
+    // Handle navigation to different views
+    const handleTimetableGenerator = () => navigate('/generator');
+    const handleTimetableUpload = () => navigate('/upload');
+    const handleTimetableView = () => navigate('/view');
+
     if (authLoading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
@@ -46,16 +42,37 @@ const TimeTable = () => {
 
     return (
         <Box sx={{ padding: 4 }}>
-            {/* Shared Buttons */}
+            {/* Header with color #7D0541 */}
+            <Typography variant="h4" component="h1" sx={{ color: '#7D0541', textAlign: 'center', marginBottom: 4 }}>
+                Timetable Management
+            </Typography>
+
+            {/* Shared Buttons with updated square styles */}
             <Grid container spacing={2} justifyContent="center" sx={{ marginBottom: 4 }}>
                 <Grid item>
                     <Button
                         variant="contained"
                         color="primary"
                         onClick={handleTimetableGenerator}
-                        sx={{ padding: '10px 20px' }}
+                        sx={{
+                            width: 150, // Set width and height to make it square
+                            height: 150,
+                            borderRadius: '8px', // Optional: makes the corners slightly rounded
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            '&:hover': {
+                                backgroundColor: '#4CAF50', // Green on hover
+                                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+                            },
+                            '&:active': {
+                                transform: 'scale(0.98)',
+                            },
+                        }}
                     >
-                        Timetable Generator
+                        <Typography variant="body1" sx={{ color: 'white', textAlign: 'center' }}>
+                            Timetable Generator
+                        </Typography>
                     </Button>
                 </Grid>
                 <Grid item>
@@ -63,9 +80,25 @@ const TimeTable = () => {
                         variant="contained"
                         color="secondary"
                         onClick={handleTimetableUpload}
-                        sx={{ padding: '10px 20px' }}
+                        sx={{
+                            width: 150,
+                            height: 150,
+                            borderRadius: '8px',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            '&:hover': {
+                                backgroundColor: '#FF5722', // Orange on hover
+                                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+                            },
+                            '&:active': {
+                                transform: 'scale(0.98)',
+                            },
+                        }}
                     >
-                        Timetable Upload
+                        <Typography variant="body1" sx={{ color: 'white', textAlign: 'center' }}>
+                            Timetable Upload
+                        </Typography>
                     </Button>
                 </Grid>
                 <Grid item>
@@ -73,61 +106,28 @@ const TimeTable = () => {
                         variant="contained"
                         color="success"
                         onClick={handleTimetableView}
-                        sx={{ padding: '10px 20px' }}
+                        sx={{
+                            width: 150,
+                            height: 150,
+                            borderRadius: '8px',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            '&:hover': {
+                                backgroundColor: '#388E3C', // Green on hover
+                                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+                            },
+                            '&:active': {
+                                transform: 'scale(0.98)',
+                            },
+                        }}
                     >
-                        View Timetable
+                        <Typography variant="body1" sx={{ color: 'white', textAlign: 'center' }}>
+                            View Timetable
+                        </Typography>
                     </Button>
                 </Grid>
             </Grid>
-
-            {/* View Logic */}
-            {view === 'timetable' ? (
-                <Typography variant="h5" align="center">
-                    Please select an action from the buttons above.
-                </Typography>
-            ) : view === 'generator' ? (
-                <>
-                    <TimetableGenerator />
-                    <Box textAlign="center" mt={4}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleBackToTimetable}
-                            sx={{ padding: '10px 20px' }}
-                        >
-                            Back to TimeTable Home Page
-                        </Button>
-                    </Box>
-                </>
-            ) : view === 'upload' ? (
-                <>
-                    <TimetableUpload />
-                    <Box textAlign="center" mt={4}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleBackToTimetable}
-                            sx={{ padding: '10px 20px' }}
-                        >
-                            Back to Weekly Timetable
-                        </Button>
-                    </Box>
-                </>
-            ) : view === 'view' ? (
-                <>
-                    <TimeTableView />
-                    <Box textAlign="center" mt={4}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleBackToTimetable}
-                            sx={{ padding: '10px 20px' }}
-                        >
-                            Back to Weekly Timetable
-                        </Button>
-                    </Box>
-                </>
-            ) : null}
         </Box>
     );
 };

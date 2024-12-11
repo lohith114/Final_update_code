@@ -2,23 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../Firebase/Firebase"; // Make sure this path is correct
 import { onAuthStateChanged } from "firebase/auth";
-import {
-  Container,
-  Typography,
-  Button,
-  Box,
-  Paper,
-  Divider,
-  CircularProgress,
-} from "@mui/material";
-import { styled } from "@mui/system";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import EditIcon from "@mui/icons-material/Edit";
-import DataUsageIcon from "@mui/icons-material/DataUsage";
-import CreateIcon from "@mui/icons-material/Create";
+import { Button, Container, Grid, Paper, Typography, CircularProgress } from "@mui/material";
 import StudentForm from "./StudentForm";
 import CreateSheet from "./CreateSheet";
 import ModifyStudent from "./ModifyStudent";
@@ -27,7 +11,7 @@ import ViewAttendance from "./ViewAttendance";
 import ViewFullAttendance from "./ViewFullAttendance";
 
 const Attendance = () => {
-  const [currentView, setCurrentView] = useState("dashboard"); // State to track current view
+  const [currentView, setCurrentView] = useState("dashboard");
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -43,29 +27,6 @@ const Attendance = () => {
     return () => unsubscribe(); // Cleanup subscription on component unmount
   }, [navigate]);
 
-  // Styled Button with hover and modern effect
-  const CustomButton = styled(Button)(({ theme }) => ({
-    width: "100%",
-    padding: theme.spacing(1.5),
-    textTransform: "none",
-    fontSize: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    gap: theme.spacing(1.5),
-    color: theme.palette.text.primary,
-    boxShadow: theme.shadows[1],
-    backgroundColor: "#fff",
-    borderRadius: "8px",
-    "&:hover": {
-      backgroundColor: theme.palette.primary.light,
-      color: theme.palette.primary.contrastText,
-      transform: "translateY(-2px)",
-      transition: "all 0.3s ease-in-out",
-    },
-  }));
-
-  // Render content based on currentView
   const renderContent = () => {
     switch (currentView) {
       case "studentForm":
@@ -82,53 +43,84 @@ const Attendance = () => {
         return <CreateSheet />;
       default:
         return (
-          <Paper
-            elevation={5}
-            sx={{
-              padding: 4,
-              borderRadius: 3,
-              textAlign: "center",
-              backgroundColor: "#f9fafc",
-            }}
-          >
+          <Paper sx={{ padding: 3, textAlign: "center" }}>
             {/* Header Section */}
-            <Typography variant="h4" fontWeight="bold" gutterBottom>
+            <Typography variant="h4" gutterBottom sx={{ color: "#7D0541" }}>
               Welcome to the Attendance Dashboard
             </Typography>
-            <Typography
-              variant="body1"
-              color="textSecondary"
-              gutterBottom
-              sx={{ marginBottom: 2 }}
-            >
+            <Typography variant="body1" paragraph>
               Manage students, classes, and attendance records effortlessly.
             </Typography>
-            <Divider sx={{ my: 3 }} />
-
-            {/* Action Buttons */}
-            <Box display="flex" flexDirection="column" gap={2}>
-              <CustomButton onClick={() => setCurrentView("studentForm")}>
-                <PersonAddIcon /> Student Registration
-              </CustomButton>
-              <CustomButton onClick={() => setCurrentView("userSheet")}>
-                <AssignmentIcon /> Class Teacher Login Details
-              </CustomButton>
-              <CustomButton onClick={() => setCurrentView("viewAttendance")}>
-                <VisibilityIcon /> View Attendance (Class Wise)
-              </CustomButton>
-              <CustomButton
-                color="secondary"
-                onClick={() => setCurrentView("modifyStudent")}
-              >
-                <EditIcon /> Modify Student Information
-              </CustomButton>
-              <CustomButton onClick={() => setCurrentView("viewFullAttendance")}>
-                <DataUsageIcon /> Full Attendance Data/Delete
-              </CustomButton>
-              <CustomButton onClick={() => setCurrentView("createSheet")}>
-                <CreateIcon /> Create New Class
-              </CustomButton>
-            </Box>
+            
+            <Grid container spacing={2} justifyContent="center">
+              {/* Action Buttons */}
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  sx={{ backgroundColor: "#ff1744", '&:hover': { backgroundColor: "#d50032" } }}
+                  onClick={() => setCurrentView("studentForm")}
+                  startIcon={<span role="img" aria-label="student">&#128100;</span>}
+                >
+                  Student Registration
+                </Button>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="secondary"
+                  onClick={() => setCurrentView("userSheet")}
+                  startIcon={<span role="img" aria-label="class">&#128196;</span>}
+                >
+                  Class Teacher Login Details
+                </Button>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="success"
+                  onClick={() => setCurrentView("viewAttendance")}
+                  startIcon={<span role="img" aria-label="view">&#128065;</span>}
+                >
+                  View Attendance (Class Wise)
+                </Button>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="warning"
+                  onClick={() => setCurrentView("modifyStudent")}
+                  startIcon={<span role="img" aria-label="modify">&#9998;</span>}
+                >
+                  Modify Student Information
+                </Button>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="error"
+                  onClick={() => setCurrentView("viewFullAttendance")}
+                  startIcon={<span role="img" aria-label="full-attendance">&#128200;</span>}
+                >
+                  Full Attendance Data/Delete
+                </Button>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="info"
+                  onClick={() => setCurrentView("createSheet")}
+                  startIcon={<span role="img" aria-label="create">&#10000;</span>}
+                >
+                  Create New Class
+                </Button>
+              </Grid>
+            </Grid>
           </Paper>
         );
     }
@@ -136,36 +128,37 @@ const Attendance = () => {
 
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-      >
+      <Container sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
         <CircularProgress />
-      </Box>
+      </Container>
     );
   }
 
   return (
-    <Container
-      maxWidth="md"
-      sx={{ mt: 4, backgroundColor: "#f0f4f8", padding: 3, borderRadius: 2 }}
-    >
-      {/* Back Button */}
+    <Container sx={{ marginTop: 3 }}>
       {currentView !== "dashboard" && (
-        <Box mb={2}>
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBackIcon />}
-            onClick={() => setCurrentView("dashboard")}
-          >
-            Back to Dashboard
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          sx={{
+            marginBottom: 4,
+            marginLeft: -5,  // Ensure the button starts from the left
+            backgroundColor: "#33691e", 
+            color: "white", 
+            fontWeight: "bold",
+            borderRadius: "25px", 
+            padding: "8px 8px", 
+            boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)", 
+            '&:hover': {
+              backgroundColor: "#cddc39", 
+              boxShadow: "0px 6px 10px rgba(0, 0, 0, 0.2)",
+            },
+          }}
+          onClick={() => setCurrentView("dashboard")}
+          startIcon={<span role="img" aria-label="back">&#11013;</span>}
+        >
+          Back to Dashboard
+        </Button>
       )}
-
-      {/* Render Main Content */}
       {renderContent()}
     </Container>
   );

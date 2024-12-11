@@ -1,5 +1,3 @@
-// src/Components/Header.js
-
 import React, { useState } from 'react';
 import { auth } from '../Firebase/Firebase';
 import { signOut } from 'firebase/auth';
@@ -43,35 +41,61 @@ function Header() {
             justifyContent="space-between" 
             alignItems="center" 
             p={2} 
-            bgcolor="primary.main" 
+            bgcolor="#003366" // Darker background color
             color="white" 
             width="100%" 
             position="fixed" 
             top={0} 
             left={0} 
             zIndex={1000} 
-            boxShadow={2}
+            boxShadow={3} // More prominent shadow
+            borderBottom="2px solid #1F2A44" // Subtle border for separation
+            borderRadius="0 0 10px 10px" // Rounded corners at the bottom
         >
+            {/* Logo Section */}
             <Box display="flex" alignItems="center">
-                <img src={logo} alt="Logo" style={{ width: '80px', height: 'auto', borderRadius: '10px' }} />
+                <img 
+                    src={logo} 
+                    alt="Logo" 
+                    style={{ 
+                        width: '90px', 
+                        height: 'auto', 
+                        borderRadius: '15px', // Rounded logo for a unique look
+                        transition: 'all 0.3s ease', 
+                    }} 
+                    className="logo-hover-effect" // Adding hover effect on the logo
+                />
             </Box>
-            
+
+            {/* User Information Section */}
             {user && (
                 <Box display="flex" alignItems="center" position="relative">
-                    <Typography variant="body2" sx={{ mr: 2 }}>
+                    {/* Display user email in a smaller size */}
+                    <Typography variant="body2" sx={{ mr: 2, fontSize: '14px', fontWeight: 'lighter' }}>
                         {user.email}
                     </Typography>
+
+                    {/* Profile Icon */}
                     <IconButton 
                         onClick={toggleDropdown} 
-                        sx={{ p: 0, ml: 2 }}
+                        sx={{ p: 0, ml: 2, transition: 'transform 0.2s ease' }}
+                        className="profile-icon-hover"
                     >
                         <img 
                             src={user.photoURL || defaultProfilePic} 
                             alt="Profile" 
-                            style={{ width: '35px', height: '35px', borderRadius: '50%', objectFit: 'cover' }} 
+                            style={{ 
+                                width: '40px', 
+                                height: '40px', 
+                                borderRadius: '50%', 
+                                objectFit: 'cover', 
+                                transition: 'transform 0.2s ease', 
+                            }} 
+                            className="profile-icon-hover"
                         />
                     </IconButton>
-                    
+
+                    {/* Dropdown Menu */}
                     <Menu
                         anchorEl={isDropdownVisible}
                         open={Boolean(isDropdownVisible)}

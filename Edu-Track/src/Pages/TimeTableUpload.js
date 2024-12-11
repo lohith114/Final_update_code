@@ -23,6 +23,7 @@ import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { styled } from '@mui/system';
+import { useNavigate } from 'react-router-dom';
 
 const StyledFileDrop = styled(Box)(({ theme, isDragOver }) => ({
   border: `2px dashed ${isDragOver ? theme.palette.primary.main : theme.palette.grey[400]}`,
@@ -35,23 +36,7 @@ const StyledFileDrop = styled(Box)(({ theme, isDragOver }) => ({
   cursor: 'pointer',
 }));
 
-  styled(Box)(({ theme, isFullScreen }) => ({
-  position: isFullScreen ? 'fixed' : 'relative',
-  top: isFullScreen ? 0 : 'auto',
-  left: isFullScreen ? 0 : 'auto',
-  zIndex: isFullScreen ? 1300 : 'auto',
-  background: isFullScreen ? theme.palette.background.default : 'transparent',
-  width: isFullScreen ? '100vw' : '100%',
-  height: isFullScreen ? '100vh' : '600px',
-  padding: theme.spacing(isFullScreen ? 2 : 0),
-  overflow: 'hidden',
-  borderRadius: isFullScreen ? 0 : theme.shape.borderRadius,
-  boxShadow: isFullScreen ? 'none' : '0 4px 6px rgba(0, 0, 0, 0.1)',
-  display: 'flex',
-  flexDirection: 'column',
-}));
-
-function TimeTableUpload() {
+const TimeTableUpload = () => {
   const [file, setFile] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -63,6 +48,7 @@ function TimeTableUpload() {
   const [openNotification, setOpenNotification] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
   const [classes, setClasses] = useState([]);
+  const navigate = useNavigate();  // For navigation
 
   useEffect(() => {
     // Fetch the list of classes
@@ -154,6 +140,40 @@ function TimeTableUpload() {
         flexDirection: { xs: 'column', md: 'row' },
       }}
     >
+      <Box
+  sx={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column', // Makes the children stack vertically
+    height: '100vh', // Make sure the container takes full viewport height
+    padding: 4,
+    position: 'relative',
+  }}
+>
+  {/* Your content */}
+  
+  {/* Back Button */}
+  <Button
+    onClick={() => navigate('/time-table')}
+    variant="outlined"
+    size="large"
+    size="large" // Increases the size of the button
+    sx={{
+      position: 'absolute',     // Positioning the button at the bottom
+      bottom: 130,               // Distance from the bottom
+      right: -250,                // Adjust to move to the right side (or use `left: 20` for left)
+      width: 200,               // Increase the width of the button
+      padding: '10px 24px',     // Adjust padding for a larger button
+      fontSize: '16px',  
+      backgroundColor: "#aed581"       // Increase font size
+    }}
+  >
+    Back
+  </Button>
+</Box>
+
+
       <Paper
         elevation={3}
         sx={{
@@ -285,7 +305,7 @@ function TimeTableUpload() {
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Card>
-    
+
           {isFullScreen && (
             <Dialog
               open={isFullScreen}
@@ -316,7 +336,7 @@ function TimeTableUpload() {
               </DialogContent>
             </Dialog>
           )}
-    
+
           <Dialog
             open={open}
             onClose={handleDialogClose}
@@ -336,6 +356,7 @@ function TimeTableUpload() {
           </Dialog>
         </Box>
       ) : null}
+
       <Dialog
         open={openNotification}
         onClose={handleNotificationClose}
@@ -351,8 +372,7 @@ function TimeTableUpload() {
         </DialogActions>
       </Dialog>
     </Box>
-    );
-    }
-    
-    export default TimeTableUpload;
-    
+  );
+};
+
+export default TimeTableUpload;
