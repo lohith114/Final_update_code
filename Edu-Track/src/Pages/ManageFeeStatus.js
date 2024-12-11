@@ -47,24 +47,25 @@ const ManageFeeStatus = () => {
     return () => unsubscribe(); // Cleanup subscription on component unmount
   }, [navigate]);
 
+  // Fetch students data
+  const fetchStudents = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/allstudents");
+      if (!response.ok) {
+        throw new Error("Failed to fetch students");
+      }
+      const data = await response.json();
+      setStudents(data); // Set the fetched data to state
+      setFilteredStudents(data); // Initially, show all students
+    } catch (err) {
+      setError(err.message); // Set the error if fetch fails
+    } finally {
+      setLoading(false); // Stop the loading spinner
+    }
+  };
+
   // Fetch students data on component mount
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/allstudents");
-        if (!response.ok) {
-          throw new Error("Failed to fetch students");
-        }
-        const data = await response.json();
-        setStudents(data); // Set the fetched data to state
-        setFilteredStudents(data); // Initially, show all students
-      } catch (err) {
-        setError(err.message); // Set the error if fetch fails
-      } finally {
-        setLoading(false); // Stop the loading spinner
-      }
-    };
-
     fetchStudents();
   }, []);
 
@@ -83,14 +84,8 @@ const ManageFeeStatus = () => {
         throw new Error("Failed to update fee status");
       }
 
-      // Update the fee status in the state
-      setStudents((prevStudents) =>
-        prevStudents.map((student) =>
-          student.rollNumber === rollNumber
-            ? { ...student, feeStatus: newStatus }
-            : student
-        )
-      );
+      // After updating the fee status, refresh the student data
+      fetchStudents(); // Refresh the data by calling the fetch function
 
       // Show Snackbar message on successful update
       setSnackbarOpen(true);
